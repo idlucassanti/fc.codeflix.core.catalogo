@@ -1,7 +1,10 @@
 ﻿using Fc.Codeflix.Core.Catalogo.Domain.Exceptions;
+using FluentAssertions;
+using FluentAssertions.Equivalency;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,7 +19,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         public void InstanciarStatusTrue()
         {
             //Arrange
-            var dadosValidos = new
+            var categoriaDTO = new
             {
                 Nome = "Categoria Nome Válido",
                 Descricao = "Categoria Descricao Válida"
@@ -24,18 +27,18 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
 
             //Action
             DateTime dataAnterior = DateTime.Now;
-            var categoria = new DomainEntity.Categoria(dadosValidos.Nome, dadosValidos.Descricao);
+            var categoria = new DomainEntity.Categoria(categoriaDTO.Nome, categoriaDTO.Descricao);
             DateTime dataPosterior = DateTime.Now;
 
             //Assertions
-            Assert.NotNull(categoria);
-            Assert.Equal(dadosValidos.Nome, categoria.Nome);
-            Assert.Equal(dadosValidos.Descricao, categoria.Descricao);
-            Assert.NotEqual(default(Guid), categoria.Id);
-            Assert.NotEqual(default(DateTime), categoria.DataCriacao);
-            Assert.True(categoria.Ativo);
-            Assert.True(categoria.DataCriacao > dataAnterior);
-            Assert.True(categoria.DataCriacao < dataPosterior);
+            categoria.Should().NotBeNull();
+            categoria.Nome.Should().Be(categoriaDTO.Nome);
+            categoria.Descricao.Should().Be(categoriaDTO.Descricao);
+            categoria.Id.Should().NotBe(default(Guid));
+            categoria.DataCriacao.Should().NotBeSameDateAs(default(DateTime));
+            categoria.Ativo.Should().BeTrue();
+            (categoria.DataCriacao > dataAnterior).Should().BeTrue();
+            (categoria.DataCriacao < dataPosterior).Should().BeTrue();
         }
 
         [Theory(DisplayName = nameof(InstanciarStatusFalse))]
@@ -45,7 +48,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         public void InstanciarStatusFalse(bool ativo)
         {
             //Arrange
-            var dadosValidos = new
+            var categoriaDTO = new
             {
                 Nome = "Categoria Nome Válido",
                 Descricao = "Categoria Descrição Válido"
@@ -54,47 +57,42 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
             //Actions
             DateTime dataAnterior = DateTime.Now;
             
-            var categoria = new DomainEntity.Categoria(dadosValidos.Nome, dadosValidos.Descricao, ativo);
+            var categoria = new DomainEntity.Categoria(categoriaDTO.Nome, categoriaDTO.Descricao, ativo);
             
             DateTime dataPosterior = DateTime.Now;
 
             //Asserts
-            Assert.NotNull(categoria);
-            Assert.NotEqual(default(Guid), categoria.Id);
-            Assert.NotEqual(default(DateTime), categoria.DataCriacao);
-            Assert.Equal(dadosValidos.Nome, categoria.Nome);
-            Assert.Equal(dadosValidos.Descricao, categoria.Descricao);
-            Assert.Equal(ativo, categoria.Ativo);
-            Assert.True(categoria.DataCriacao > dataAnterior);
-            Assert.True(categoria.DataCriacao < dataPosterior);
+            categoria.Should().NotBeNull();
+            categoria.Should().NotBe(default(Guid));
+            categoria.Should().NotBeSameAs(default(DateTime));
+            categoria.Nome.Should().Be(categoriaDTO.Nome);
+            categoria.Descricao.Should().Be(categoriaDTO.Descricao);
+            categoria.Ativo.Should().Be(ativo);
+            (categoria.DataCriacao > dataAnterior).Should().BeTrue();
+            (categoria.DataCriacao < dataPosterior).Should().BeTrue();
         }
 
-        [Theory(DisplayName = nameof(InstanciarNomeInvalidoError))]
+        [Theory(DisplayName = nameof(InstanciarNomeInvalidoException))]
         [Trait("Domain", "Categoria - Aggregates")]
         [InlineData("")]
         [InlineData(null)]
         [InlineData("   ")]
-        public void InstanciarNomeInvalidoError(string? nome)
+        public void InstanciarNomeInvalidoException(string? nome)
         {
-            void action() => new DomainEntity.Categoria(nome!, "Categoria Descrição Válida");
+            Action action = () => new DomainEntity.Categoria(nome!, "Categoria Descrição Válida");
 
-            var exception = Assert.Throws<EntityValidationException>(() => action());
-
-            Assert.Equal(exception.Message, $"Nome não pode ser vazio ou nulo.");
+            action.Should().Throw<EntityValidationException>().WithMessage($"Nome não pode ser vazio ou nulo.");
         }
 
-        [Fact(DisplayName = nameof(InstanciarDescricaoInvalidoError))]
+        [Fact(DisplayName = nameof(InstanciarDescricaoInvalidoException))]
         [Trait("Domain", "Categoria - Aggregates")]
-        public void InstanciarDescricaoInvalidoError()
+        public void InstanciarDescricaoInvalidoException()
         {
             //Arrange
-            void action() => new DomainEntity.Categoria("Categoria Nome Válido", null!);
-
-            //Actions
-            var exception = Assert.Throws<EntityValidationException>(() => action());
+            Action action = () => new DomainEntity.Categoria("Categoria Nome Válido", null!);
 
             //Asserts
-            Assert.Equal("Descricao não pode ser nulo.", exception.Message);
+            action.Should().Throw<EntityValidationException>("Descricao não pode ser nulo.");
         }
 
         [Theory(DisplayName = nameof(InstanciarNomeMenor3CaracteresException))]
@@ -104,12 +102,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [InlineData("abc")]
         public void InstanciarNomeMenor3CaracteresException(string nome)
         {
-            void action() => new DomainEntity.Categoria(nome, "Categoria Descrição Válida");
+            Action action = () => new DomainEntity.Categoria(nome, "Categoria Descrição Válida");
 
-            var exception = Assert.Throws<EntityValidationException>(() => action());
-
-            //Asserts
-            Assert.Equal("Nome não pode ser menor que 3 caracteres.", exception.Message);
+            action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser menor que 3 caracteres.");
         }
 
         [Fact(DisplayName = nameof(InstanciarNomeMaior255CaracteresException))]
@@ -118,12 +113,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         {
             var nome = String.Join(null, Enumerable.Range(0, 256).Select(_ => "a").ToArray());
 
-            void action() => new DomainEntity.Categoria(nome, "Categoria Descrição Válida");
+            Action action = () => new DomainEntity.Categoria(nome, "Categoria Descrição Válida");
 
-            var exception = Assert.Throws<EntityValidationException>(action);
-
-            //Asserts
-            Assert.Equal("Nome não pode ser maior que 255 caracteres.", exception.Message);
+            action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser maior que 255 caracteres.");
         }
 
         [Fact(DisplayName = nameof(InstanciarDescricaoMaior10_000Exception))]
@@ -132,12 +124,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         {
             var descricao = String.Join(null, Enumerable.Range(0, 10001).Select(_ => "a").ToArray());
 
-            void action() => new DomainEntity.Categoria("Categoria Nome Válido", descricao);
+            Action action = () => new DomainEntity.Categoria("Categoria Nome Válido", descricao);
 
-            var exception = Assert.Throws<EntityValidationException>(action);
-
-            //Asserts
-            Assert.Equal("Descricao não conter mais que 10000 caracteres.", exception.Message);
+            action.Should().Throw<EntityValidationException>().WithMessage("Descricao não conter mais que 10000 caracteres.");
         }
 
         [Fact(DisplayName = nameof(AtivarCategoria))]
@@ -150,7 +139,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
             categoria.Ativar();
 
             //Asserts
-            Assert.True(categoria.Ativo);
+            categoria.Ativo.Should().BeTrue();
         }
 
         [Fact(DisplayName = nameof(InativarCategoria))]
@@ -161,7 +150,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
 
             categoria.Inativar();
 
-            Assert.False(categoria.Ativo);
+            categoria.Ativo.Should().BeFalse();
         }
 
         [Fact(DisplayName = nameof(Update))]
@@ -173,8 +162,8 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
 
             categoria.Update(categoriaDto.Nome, categoriaDto.Descricao);
 
-            Assert.Equal(categoriaDto.Nome, categoria.Nome);
-            Assert.Equal(categoriaDto.Descricao, categoria.Descricao);
+            categoria.Nome.Should().Be(categoriaDto.Nome);
+            categoria.Descricao.Should().Be(categoriaDto.Descricao);
         }
 
         [Fact(DisplayName = nameof(UpdateNome))]
@@ -187,8 +176,8 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
 
             categoria.Update(categoriaDto.Nome);
 
-            Assert.Equal(categoriaDto.Nome, categoria.Nome);
-            Assert.Equal(descricao, categoria.Descricao);
+            categoria.Nome.Should().Be(categoriaDto.Nome);
+            categoria.Descricao.Should().Be(descricao);
         }
 
         [Theory(DisplayName = nameof(UpdateNomeInvalidoException))]
@@ -200,11 +189,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         {
             var categoria = new DomainEntity.Categoria("Nome Válido", "Descrição Válido");
 
-            void action() => categoria.Update(nome!);
+            Action action = () => categoria.Update(nome!);
 
-            var exception = Assert.Throws<EntityValidationException>(() => action());
-
-            Assert.Equal(exception.Message, $"Nome não pode ser vazio ou nulo.");
+            action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser vazio ou nulo.");
         }
 
         [Theory(DisplayName = nameof(UpdateNomeMenor3CaracteresException))]
@@ -216,12 +203,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         {
             var categoria = new DomainEntity.Categoria("Nome válido", "Descrição válido");
             
-            void action() => categoria.Update(nome);
+            Action action = () => categoria.Update(nome);
 
-            var exception = Assert.Throws<EntityValidationException>(() => action());
-
-            //Asserts
-            Assert.Equal("Nome não pode ser menor que 3 caracteres.", exception.Message);
+            action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser menor que 3 caracteres.");
         }
 
         [Fact(DisplayName = nameof(UpdateNomeMaior255CaracteresException))]
@@ -231,12 +215,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
             var categoria = new DomainEntity.Categoria("Nome válido", "Descrição válido");
             var nomeInvalido = String.Join(null, Enumerable.Range(0, 256).Select(_ => "a").ToArray());
 
-            void action() => categoria.Update(nomeInvalido);
+            Action action = () => categoria.Update(nomeInvalido);
 
-            var exception = Assert.Throws<EntityValidationException>(action);
-
-            //Asserts
-            Assert.Equal("Nome não pode ser maior que 255 caracteres.", exception.Message);
+            action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser maior que 255 caracteres.");
         }
 
         [Fact(DisplayName = nameof(UpdateDescricaoMaior10_000Exception))]
@@ -246,12 +227,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
             var categoria = new DomainEntity.Categoria("Nome válido", "Descrição válido");
             var descricaoInvalida = String.Join(null, Enumerable.Range(0, 10001).Select(_ => "a").ToArray());
 
-            void action() => categoria.Update("Categoria Nome Válido", descricaoInvalida);
+            Action action = () => categoria.Update("Categoria Nome Válido", descricaoInvalida);
 
-            var exception = Assert.Throws<EntityValidationException>(action);
-
-            //Asserts
-            Assert.Equal("Descricao não conter mais que 10000 caracteres.", exception.Message);
+            action.Should().Throw<EntityValidationException>().WithMessage("Descricao não conter mais que 10000 caracteres.");
         }
     }
 }

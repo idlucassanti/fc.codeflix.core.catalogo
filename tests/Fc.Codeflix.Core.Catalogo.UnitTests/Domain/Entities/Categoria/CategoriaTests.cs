@@ -12,23 +12,27 @@ using DomainEntity = Fc.Codeflix.Core.Catalogo.Domain.Entities;
 
 namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
 {
+    [Collection(nameof(CategoriaTestsFixture))]
     public class CategoriaTests
     {
+        private readonly CategoriaTestsFixture _fixture;
+
+        public CategoriaTests(CategoriaTestsFixture fixture)
+        {
+            _fixture = fixture;
+        }
+
         [Fact(DisplayName = nameof(InstanciarStatusTrue))]
         [Trait("Domain", "Categoria - Aggregates")]
         public void InstanciarStatusTrue()
         {
             //Arrange
-            var categoriaDTO = new
-            {
-                Nome = "Categoria Nome Válido",
-                Descricao = "Categoria Descricao Válida"
-            };
+            var categoriaDTO = _fixture.GetValidCategory();
 
             //Action
             DateTime dataAnterior = DateTime.Now;
             var categoria = new DomainEntity.Categoria(categoriaDTO.Nome, categoriaDTO.Descricao);
-            DateTime dataPosterior = DateTime.Now;
+            DateTime dataPosterior = DateTime.Now.AddSeconds(1);
 
             //Assertions
             categoria.Should().NotBeNull();
@@ -48,18 +52,14 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         public void InstanciarStatusFalse(bool ativo)
         {
             //Arrange
-            var categoriaDTO = new
-            {
-                Nome = "Categoria Nome Válido",
-                Descricao = "Categoria Descrição Válido"
-            };
+            var categoriaDTO = _fixture.GetValidCategory();
 
             //Actions
             DateTime dataAnterior = DateTime.Now;
             
             var categoria = new DomainEntity.Categoria(categoriaDTO.Nome, categoriaDTO.Descricao, ativo);
             
-            DateTime dataPosterior = DateTime.Now;
+            DateTime dataPosterior = DateTime.Now.AddSeconds(1);
 
             //Asserts
             categoria.Should().NotBeNull();
@@ -79,7 +79,8 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [InlineData("   ")]
         public void InstanciarNomeInvalidoException(string? nome)
         {
-            Action action = () => new DomainEntity.Categoria(nome!, "Categoria Descrição Válida");
+            var categoria = _fixture.GetValidCategory();
+            Action action = () => new DomainEntity.Categoria(nome!, categoria.Descricao);
 
             action.Should().Throw<EntityValidationException>().WithMessage($"Nome não pode ser vazio ou nulo.");
         }
@@ -89,7 +90,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         public void InstanciarDescricaoInvalidoException()
         {
             //Arrange
-            Action action = () => new DomainEntity.Categoria("Categoria Nome Válido", null!);
+            var categoria = _fixture.GetValidCategory();
+
+            Action action = () => new DomainEntity.Categoria(categoria.Nome, null!);
 
             //Asserts
             action.Should().Throw<EntityValidationException>("Descricao não pode ser nulo.");
@@ -102,7 +105,9 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [InlineData("abc")]
         public void InstanciarNomeMenor3CaracteresException(string nome)
         {
-            Action action = () => new DomainEntity.Categoria(nome, "Categoria Descrição Válida");
+            var categoria = _fixture.GetValidCategory();
+
+            Action action = () => new DomainEntity.Categoria(nome, categoria.Descricao);
 
             action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser menor que 3 caracteres.");
         }
@@ -111,9 +116,10 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [Trait("Domain", "Categoria - Aggregates")]
         public void InstanciarNomeMaior255CaracteresException()
         {
-            var nome = String.Join(null, Enumerable.Range(0, 256).Select(_ => "a").ToArray());
+            var categoria = _fixture.GetValidCategory();
+            var nomeInvalido = String.Join(null, Enumerable.Range(0, 256).Select(_ => "a").ToArray());
 
-            Action action = () => new DomainEntity.Categoria(nome, "Categoria Descrição Válida");
+            Action action = () => new DomainEntity.Categoria(nomeInvalido, categoria.Descricao);
 
             action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser maior que 255 caracteres.");
         }
@@ -122,9 +128,10 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [Trait("Domain", "Categoria - Aggregates")]
         public void InstanciarDescricaoMaior10_000Exception()
         {
-            var descricao = String.Join(null, Enumerable.Range(0, 10001).Select(_ => "a").ToArray());
+            var categoria = _fixture.GetValidCategory();
+            var descricaoInvalida = String.Join(null, Enumerable.Range(0, 10001).Select(_ => "a").ToArray());
 
-            Action action = () => new DomainEntity.Categoria("Categoria Nome Válido", descricao);
+            Action action = () => new DomainEntity.Categoria(categoria.Nome, descricaoInvalida);
 
             action.Should().Throw<EntityValidationException>().WithMessage("Descricao não conter mais que 10000 caracteres.");
         }
@@ -133,7 +140,8 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [Trait("Domain", "Categoria - Aggregates")]
         public void AtivarCategoria()
         {
-            var categoria = new DomainEntity.Categoria("Categoria Nome Válido", "Categoria Descrição Válida", false);
+            var data = _fixture.GetValidCategory();
+            var categoria = new DomainEntity.Categoria(data.Nome, data.Descricao, false);
 
             //Actions
             categoria.Ativar();
@@ -146,7 +154,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [Trait("Domain", "Categoria - Aggregates")]
         public void InativarCategoria()
         {
-            var categoria = new DomainEntity.Categoria("Categoria Nome Válido", "Categoria Descrição Válida");
+            var categoria = _fixture.GetValidCategory();
 
             categoria.Inativar();
 
@@ -157,7 +165,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [Trait("Domain", "Categoria - Aggregates")]
         public void Update()
         {
-            var categoria = new DomainEntity.Categoria("Nome 1", "Descrição 1");
+            var categoria = _fixture.GetValidCategory();
             var categoriaDto = new { Nome = "Nome novo", Descricao = "Descrição nova" };
 
             categoria.Update(categoriaDto.Nome, categoriaDto.Descricao);
@@ -170,7 +178,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [Trait("Domain", "Categoria - Aggregates")]
         public void UpdateNome()
         {
-            var categoria = new DomainEntity.Categoria("Nome 1", "Descrição 1");
+            var categoria = _fixture.GetValidCategory();
             var categoriaDto = new { Nome = "Nome novo" };
             var descricao = categoria.Descricao;
 
@@ -187,7 +195,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [InlineData("   ")]
         public void UpdateNomeInvalidoException(string? nome)
         {
-            var categoria = new DomainEntity.Categoria("Nome Válido", "Descrição Válido");
+            var categoria = _fixture.GetValidCategory();
 
             Action action = () => categoria.Update(nome!);
 
@@ -201,8 +209,8 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [InlineData("abc")]
         public void UpdateNomeMenor3CaracteresException(string nome)
         {
-            var categoria = new DomainEntity.Categoria("Nome válido", "Descrição válido");
-            
+            var categoria = _fixture.GetValidCategory();
+
             Action action = () => categoria.Update(nome);
 
             action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser menor que 3 caracteres.");
@@ -212,7 +220,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [Trait("Domain", "Categoria - Aggregates")]
         public void UpdateNomeMaior255CaracteresException()
         {
-            var categoria = new DomainEntity.Categoria("Nome válido", "Descrição válido");
+            var categoria = _fixture.GetValidCategory();
             var nomeInvalido = String.Join(null, Enumerable.Range(0, 256).Select(_ => "a").ToArray());
 
             Action action = () => categoria.Update(nomeInvalido);
@@ -224,7 +232,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         [Trait("Domain", "Categoria - Aggregates")]
         public void UpdateDescricaoMaior10_000Exception()
         {
-            var categoria = new DomainEntity.Categoria("Nome válido", "Descrição válido");
+            var categoria = _fixture.GetValidCategory();
             var descricaoInvalida = String.Join(null, Enumerable.Range(0, 10001).Select(_ => "a").ToArray());
 
             Action action = () => categoria.Update("Categoria Nome Válido", descricaoInvalida);

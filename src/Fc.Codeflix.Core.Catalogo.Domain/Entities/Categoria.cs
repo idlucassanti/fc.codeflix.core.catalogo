@@ -1,4 +1,5 @@
 ﻿using Fc.Codeflix.Core.Catalogo.Domain.Exceptions;
+using Fc.Codeflix.Core.Catalogo.Domain.SeedWork;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace Fc.Codeflix.Core.Catalogo.Domain.Entities
 {
-    public class Categoria
+    public class Categoria : AggregateRoot
     {
         public Categoria(string nome, string descricao, bool ativo = true)
+            :base()
         {
-            Id = Guid.NewGuid();
             Nome = nome;
             Descricao = descricao;
             Ativo = ativo;
@@ -20,7 +21,6 @@ namespace Fc.Codeflix.Core.Catalogo.Domain.Entities
             Validate();
         }
 
-        public Guid Id { get; private set; }
         public string Nome { get; private set; }
         public string Descricao { get; private set; }
         public bool Ativo { get; private set; }

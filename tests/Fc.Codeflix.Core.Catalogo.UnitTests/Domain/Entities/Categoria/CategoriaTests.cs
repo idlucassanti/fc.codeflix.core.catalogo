@@ -166,12 +166,12 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         public void Update()
         {
             var categoria = _fixture.GetValidCategory();
-            var categoriaDto = new { Nome = "Nome novo", Descricao = "Descrição nova" };
+            var categoriaInputDto = _fixture.GetValidCategory();
 
-            categoria.Update(categoriaDto.Nome, categoriaDto.Descricao);
+            categoria.Update(categoriaInputDto.Nome, categoriaInputDto.Descricao);
 
-            categoria.Nome.Should().Be(categoriaDto.Nome);
-            categoria.Descricao.Should().Be(categoriaDto.Descricao);
+            categoria.Nome.Should().Be(categoriaInputDto.Nome);
+            categoria.Descricao.Should().Be(categoriaInputDto.Descricao);
         }
 
         [Fact(DisplayName = nameof(UpdateNome))]
@@ -179,12 +179,12 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         public void UpdateNome()
         {
             var categoria = _fixture.GetValidCategory();
-            var categoriaDto = new { Nome = "Nome novo" };
+            var novoNome = _fixture.GetValidName();
             var descricao = categoria.Descricao;
 
-            categoria.Update(categoriaDto.Nome);
+            categoria.Update(novoNome);
 
-            categoria.Nome.Should().Be(categoriaDto.Nome);
+            categoria.Nome.Should().Be(novoNome);
             categoria.Descricao.Should().Be(descricao);
         }
 
@@ -221,7 +221,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         public void UpdateNomeMaior255CaracteresException()
         {
             var categoria = _fixture.GetValidCategory();
-            var nomeInvalido = String.Join(null, Enumerable.Range(0, 256).Select(_ => "a").ToArray());
+            var nomeInvalido = _fixture.Faker.Lorem.Letter(256);
 
             Action action = () => categoria.Update(nomeInvalido);
 
@@ -233,7 +233,12 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
         public void UpdateDescricaoMaior10_000Exception()
         {
             var categoria = _fixture.GetValidCategory();
-            var descricaoInvalida = String.Join(null, Enumerable.Range(0, 10001).Select(_ => "a").ToArray());
+            var descricaoInvalida = _fixture.Faker.Commerce.ProductDescription();
+
+            while (descricaoInvalida.Length < 10000)
+            {
+                descricaoInvalida = $"${descricaoInvalida} {_fixture.Faker.Commerce.ProductDescription}";
+            }
 
             Action action = () => categoria.Update("Categoria Nome Válido", descricaoInvalida);
 

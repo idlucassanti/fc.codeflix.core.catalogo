@@ -100,9 +100,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
 
         [Theory(DisplayName = nameof(InstanciarNomeMenor3CaracteresException))]
         [Trait("Domain", "Categoria - Aggregates")]
-        [InlineData("a")]
-        [InlineData("ab")]
-        [InlineData("abc")]
+        [MemberData(nameof(GetNamesWithLessThan3Characteres), parameters: 10)]
         public void InstanciarNomeMenor3CaracteresException(string nome)
         {
             var categoria = _fixture.GetValidCategory();
@@ -204,9 +202,7 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
 
         [Theory(DisplayName = nameof(UpdateNomeMenor3CaracteresException))]
         [Trait("Domain", "Categoria - Aggregates")]
-        [InlineData("a")]
-        [InlineData("ab")]
-        [InlineData("abc")]
+        [MemberData(nameof(GetNamesWithLessThan3Characteres), parameters: 10)]
         public void UpdateNomeMenor3CaracteresException(string nome)
         {
             var categoria = _fixture.GetValidCategory();
@@ -214,6 +210,20 @@ namespace Fc.Codeflix.Core.Catalogo.UnitTests.Domain.Entities.Categoria
             Action action = () => categoria.Update(nome);
 
             action.Should().Throw<EntityValidationException>().WithMessage("Nome não pode ser menor que 3 caracteres.");
+        }
+
+        public static IEnumerable<object[]> GetNamesWithLessThan3Characteres(int count)
+        {
+            var fixture = new CategoriaTestsFixture();
+
+            for (int i = 0; i <= count; i++)
+            {
+                var isOdd = i % 2 == 1;
+                yield return new object[]
+                {
+                    fixture.GetValidName()[..(isOdd ? 1 : 2)]
+                };
+            }
         }
 
         [Fact(DisplayName = nameof(UpdateNomeMaior255CaracteresException))]
